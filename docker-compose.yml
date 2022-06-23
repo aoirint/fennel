@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    command: gosu user uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      JWT_SECRET: ${JWT_SECRET}
+      UPLOAD_ROOT_URL: ${UPLOAD_ROOT_URL}
+    volumes:
+      - "./main.py:/code/main.py"
+      - "${HOST_UPLOAD_DIR}:/uploads"
+      - "${HOST_DATA_DIR}:/data"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://127.0.0.1:8000/version"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+  
+  nginx:
+    image: nginx:1.23
+    volumes:
+      - "./default.conf.template:/etc/nginx/templates/default.conf.template"
+      - "${HOST_UPLOAD_DIR}:/uploads"
+    ports:
+      - "${HOST_PORT}:80"
+    depends_on:
+      - app
